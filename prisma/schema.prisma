@@ -1,0 +1,89 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int           @id @default(autoincrement())
+  firstName    String
+  lastName     String
+  email        String        @unique
+  phoneNumber  String        @unique
+  password     String
+  createdAt    DateTime      @default(now())
+  airtimeBills AirtimeBill[]  // relation to airtime billing
+  package      PackageType         @default(BASIC)
+  packageHistory UserPackageHistory[]
+}
+
+model AirtimeBill {
+  id              Int       @id @default(autoincrement())
+  userId          Int
+  phoneNumber     String
+  network         String
+  package         String?
+  keyword         String
+  amountDeducted  Int
+  status          String
+  createdAt       DateTime  @default(now())
+
+  user            User      @relation(fields: [userId], references: [id])
+
+  // Back-reference for AirtimeBalanceHistory
+  balanceHistories AirtimeBalanceHistory[] @relation(name: "AirtimeBillHistory")
+}
+
+model AirtimeNetworkBalance {
+  id          Int      @id @default(autoincrement())
+  network     String
+  phoneNumber String
+  balance     Float    @default(0)
+  updatedAt   DateTime @updatedAt
+
+  @@unique([network, phoneNumber])
+}
+
+model AirtimeBalanceHistory {
+  id              Int           @id @default(autoincrement())
+  network         String
+  phoneNumber     String
+  previousBalance Float
+  amountChanged   Float
+  newBalance      Float
+  status          String        // "successful", "pending", "failed"
+  timestamp       DateTime      @default(now())
+
+  airtimeBillId   Int?
+  airtimeBill     AirtimeBill? @relation(name: "AirtimeBillHistory", fields: [airtimeBillId], references: [id])
+
+  @@index([phoneNumber, network])
+}
+
+model TotalBalance {
+  id          Int     @id @default(autoincrement())
+  email       String
+  phoneNumber String
+  totalAmount Float
+
+  @@unique([email, phoneNumber])
+}
+
+enum PackageType {
+  BASIC
+  STANDARD
+  PREMIUM
+}
+
+model UserPackageHistory {
+  id          Int         @id @default(autoincrement())
+  userId      Int
+  oldPackage  PackageType
+  newPackage  PackageType
+  changedAt   DateTime    @default(now())
+
+  user        User        @relation(fields: [userId], references: [id])
+}
