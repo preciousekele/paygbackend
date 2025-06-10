@@ -10,7 +10,7 @@ const generateToken = (user) => {
     { 
       id: user.id, 
       email: user.email, 
-      phoneNumber: user.phoneNumber, // Added phoneNumber to token
+      phoneNumber: user.phoneNumber, 
       role: user.role 
     },
     process.env.JWT_SECRET,
