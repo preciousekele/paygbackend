@@ -31,7 +31,7 @@ const purchaseAirtime = async (req, res) => {
         data: {
           network,
           phoneNumber: number,
-          balance: 2000, // Default initial balance
+          balance: 20000, // Default initial balance
         },
       });
     }
