@@ -15,27 +15,29 @@ model User {
   phoneNumber  String        @unique
   password     String
   createdAt    DateTime      @default(now())
-  airtimeBills AirtimeBill[]  // relation to airtime billing
-  package      PackageType         @default(BASIC)
+  airtimeBills AirtimeBill[]
+  package      PackageType   @default(BASIC)
   packageHistory UserPackageHistory[]
+  packageBalance PackageBalance?
 }
 
 model AirtimeBill {
-  id              Int       @id @default(autoincrement())
-  userId          Int
-  phoneNumber     String
-  network         String
-  package         String?
-  keyword         String
-  amountDeducted  Int
-  status          String
-  createdAt       DateTime  @default(now())
-
-  user            User      @relation(fields: [userId], references: [id])
-
-  // Back-reference for AirtimeBalanceHistory
+  id               Int       @id @default(autoincrement())
+  userId           Int
+  phoneNumber      String
+  network          String
+  package          String?
+  keyword          String
+  amountDeducted   Int
+  percentage       Int?      
+  percentageAmount Int?      
+  status           String
+  createdAt        DateTime  @default(now())
+  user             User      @relation(fields: [userId], references: [id])
   balanceHistories AirtimeBalanceHistory[] @relation(name: "AirtimeBillHistory")
 }
+
+
 
 model AirtimeNetworkBalance {
   id          Int      @id @default(autoincrement())
@@ -43,7 +45,6 @@ model AirtimeNetworkBalance {
   phoneNumber String
   balance     Float    @default(0)
   updatedAt   DateTime @updatedAt
-
   @@unique([network, phoneNumber])
 }
 
@@ -54,21 +55,34 @@ model AirtimeBalanceHistory {
   previousBalance Float
   amountChanged   Float
   newBalance      Float
-  status          String        // "successful", "pending", "failed"
+  status          String
   timestamp       DateTime      @default(now())
-
   airtimeBillId   Int?
   airtimeBill     AirtimeBill? @relation(name: "AirtimeBillHistory", fields: [airtimeBillId], references: [id])
-
   @@index([phoneNumber, network])
 }
 
+// New model for package-based balance tracking
+model PackageBalance {
+  id               Int         @id @default(autoincrement())
+  userId           Int         @unique
+  email            String
+  phoneNumber      String
+  packageType      PackageType
+  totalPackage     Float       // Fixed amount based on package (25000, 50000, 100000)
+  balanceTbPaid    Float       // Remaining balance to be paid
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  user             User        @relation(fields: [userId], references: [id])
+  @@unique([email, phoneNumber])
+}
+
+// Legacy model - keeping for backward compatibility
 model TotalBalance {
   id          Int     @id @default(autoincrement())
   email       String
   phoneNumber String
   totalAmount Float
-
   @@unique([email, phoneNumber])
 }
 
@@ -84,6 +98,5 @@ model UserPackageHistory {
   oldPackage  PackageType
   newPackage  PackageType
   changedAt   DateTime    @default(now())
-
   user        User        @relation(fields: [userId], references: [id])
 }
